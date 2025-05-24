@@ -3,7 +3,7 @@ import pandas as pd
 from dash import dash_table
 import dash_bootstrap_components as dbc
 
-def criar_tabela_estoque(df_dados_tabela, id_tabela='tabela-estoque', page_size=1000):
+def criar_tabela_estoque(df_dados_tabela, id_tabela='tabela-estoque', page_size=20):
     """
     Cria um componente DataTable do Dash para exibir o DataFrame fornecido.
     df_dados_tabela: DataFrame já preparado para exibição (ex: df.head(1000)).

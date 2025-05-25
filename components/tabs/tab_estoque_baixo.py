@@ -1,4 +1,3 @@
-# components/tabs/tab_estoque_baixo.py
 from dash import html
 
 def criar_conteudo_aba_estoque_baixo():

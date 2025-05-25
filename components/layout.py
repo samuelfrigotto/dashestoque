@@ -31,9 +31,9 @@ def criar_layout_principal(df_completo, nome_arquivo, page_size_tabela=20):
                 className="pt-3" 
             ),
             dbc.Tab(
-                label="Configurações de Alerta", 
-                children=criar_conteudo_aba_configuracoes(),
-                tab_id="tab-configuracoes",
+                label="Definições de Níveis", # Você pode mudar o label da aba aqui se quiser
+                children=criar_conteudo_aba_configuracoes(), # Esta função agora retorna o novo layout
+                tab_id="tab-configuracoes", # O ID da aba pode permanecer
                 className="pt-3"
             ),
             dbc.Tab(

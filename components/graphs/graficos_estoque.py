@@ -1,6 +1,8 @@
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots # IMPORTAR make_subplots
+import math # Para cálculos de layout de subplots
 
 def criar_figura_vazia(titulo="Sem dados para exibir"):
     """Cria uma figura Plotly vazia com um título."""
@@ -50,29 +52,47 @@ def criar_grafico_estoque_por_grupo(df):
     return fig
 
 def criar_grafico_top_n_produtos_estoque(df, n=7):
-    """Cria um gráfico de barras verticais dos top N produtos com maior estoque."""
+    """
+    Cria um gráfico de Donut mostrando a proporção de estoque dos
+    Top N produtos com maior quantidade em estoque.
+    """
     if df.empty or 'Produto' not in df.columns or 'Estoque' not in df.columns:
         return criar_figura_vazia(f"Top {n} Produtos (Sem Dados)")
 
     df_plot = df.copy()
     df_plot['Estoque'] = pd.to_numeric(df_plot['Estoque'], errors='coerce').fillna(0)
 
-    top_n = df_plot.nlargest(n, 'Estoque')
-    top_n = top_n[top_n['Estoque'] > 0]
+    top_n = df_plot[df_plot['Estoque'] > 0].nlargest(n, 'Estoque')
+    
     if top_n.empty:
-        return criar_figura_vazia(f"Top {n} Produtos (Sem Estoque > 0)")
+        return criar_figura_vazia(f"Top {n} Produtos (Sem Estoque > 0 para exibir)")
         
-    fig = px.bar(top_n, 
-                   x='Produto', 
-                   y='Estoque', 
-                   title=f'Top {n} Produtos com Maior Estoque',
-                   labels={'Estoque': 'Quantidade em Estoque', 'Produto': 'Produto'},
-                   text_auto=True,
-                   color='Produto')
+    fig = px.pie(top_n, 
+                   values='Estoque', 
+                   names='Produto', 
+                   title=f'Participação dos Top {n} Produtos no Estoque',
+                   hole=.4, # Cria o efeito Donut
+                   labels={'Estoque': 'Quantidade em Estoque', 'Produto': 'Produto'})
+    
+    # Configurações para texto e legenda
+    fig.update_traces(
+        textposition='inside', 
+        textinfo='percent', # Mostrar apenas percentual dentro das fatias
+        insidetextorientation='radial' # Orientação do texto dentro da fatia
+    )
     fig.update_layout(
-        xaxis_tickangle=-45,
-        showlegend=False,
-        title_x=0.5
+        legend_title_text='Produtos',
+        legend=dict(
+            orientation="v", # Legenda vertical
+            yanchor="middle",  # Ancora no meio verticalmente
+            y=0.5,           # Posição Y no meio do gráfico
+            xanchor="left", # Ancora à esquerda da legenda
+            x=1.01           # Posição X um pouco à direita do gráfico
+        ),
+        title_x=0.5, # Centraliza o título do gráfico
+        # Você pode ajustar a altura do gráfico aqui se necessário, e.g., height=400
+        # height=380 # Exemplo de altura
+        margin=dict(l=20, r=20, t=60, b=20, pad=4) # Ajustar margens para dar espaço à legenda
     )
     return fig
 
@@ -160,7 +180,7 @@ def criar_grafico_niveis_estoque(df, limite_baixo=10, limite_medio=100):
                    x='NivelEstoque', 
                    y='Contagem', 
                    title='Produtos por Nível de Estoque',
-                   labels={'Contagem': 'Número de Produtos', 'NivelEstoque': 'Nível de Estoque'},
+                   labels={'Contagem': ' ', 'NivelEstoque': 'Nível de Estoque'},
                    text_auto=True,
                    color='NivelEstoque',
                    color_discrete_map=mapa_cores
@@ -197,3 +217,86 @@ def criar_grafico_categorias_com_estoque_baixo(df_estoque_baixo, top_n=10):
                    text_auto=True)
     fig.update_layout(yaxis={'categoryorder':'total ascending', 'dtick': 1}, title_x=0.5)
     return fig
+
+def criar_grafico_estoque_produtos_populares(df, n=7):
+    """
+    Cria um gráfico de linhas comparando Estoque Atual vs. Venda Mensal
+    para os N produtos mais vendidos (populares).
+    A popularidade é baseada na coluna 'VendaMensal'.
+    O eixo X são os Produtos, e há duas linhas (Estoque, VendaMensal).
+    """
+    if df is None or df.empty or 'Produto' not in df.columns or \
+       'VendaMensal' not in df.columns or 'Estoque' not in df.columns:
+        return criar_figura_vazia(f"Venda vs. Estoque dos Top {n} Produtos (Sem Dados)")
+
+    df_plot = df.copy()
+    # Usar nomes diferentes para as colunas numéricas para evitar conflito no melt se já existirem 'Quantidade' ou 'Metrica'
+    df_plot['VendaMensalNum'] = pd.to_numeric(df_plot['VendaMensal'], errors='coerce').fillna(0)
+    df_plot['EstoqueNum'] = pd.to_numeric(df_plot['Estoque'], errors='coerce').fillna(0)
+
+    # Selecionar os top N produtos com base em 'VendaMensal'
+    # Considerar apenas produtos com vendas > 0 para serem "populares"
+    produtos_populares_df = df_plot[df_plot['VendaMensalNum'] > 0].nlargest(n, 'VendaMensalNum')
+    
+    if produtos_populares_df.empty:
+        return criar_figura_vazia(f"Venda vs. Estoque dos Top {n} Produtos (Sem produtos com vendas)")
+
+    # Preparar dados no formato longo para px.line
+    # Renomear as métricas para a legenda ficar mais amigável
+    df_melted = produtos_populares_df.melt(
+        id_vars=['Produto'], 
+        value_vars=['EstoqueNum', 'VendaMensalNum'], # Ordem aqui pode influenciar a ordem na legenda
+        var_name='Metrica', 
+        value_name='Quantidade'
+    )
+    
+    # Renomear valores na coluna 'Metrica' para a legenda
+    df_melted['Metrica'] = df_melted['Metrica'].replace({
+        'EstoqueNum': 'Estoque Atual',
+        'VendaMensalNum': 'Vendas no Mês'
+    })
+    
+    # Ordenar os produtos no eixo X pela VendaMensal original (do mais vendido para o menos)
+    ordem_produtos_eixo_x = produtos_populares_df.sort_values(by='VendaMensalNum', ascending=False)['Produto'].tolist()
+    df_melted['Produto'] = pd.Categorical(df_melted['Produto'], categories=ordem_produtos_eixo_x, ordered=True)
+    
+    # Ordenar o DataFrame para garantir que as linhas sejam desenhadas corretamente
+    df_melted.sort_values(by=['Produto', 'Metrica'], inplace=True)
+
+    fig = px.line(df_melted,
+                   x='Produto',         # Produtos no eixo X
+                   y='Quantidade',      # Valores no eixo Y
+                   color='Metrica',     # Cria uma linha para 'Estoque Atual' e uma para 'Vendas no Mês'
+                   markers=True,        # Adiciona marcadores nos pontos
+                   title=f'Venda Mensal vs. Estoque Atual (Top {n} Produtos Populares)',
+                   labels={'Quantidade': 'Quantidade', 'Produto': 'Produtos Populares', 'Metrica': 'Métrica'},
+                   color_discrete_map={ # Cores específicas para as linhas
+                       'Vendas no Mês': 'rgba(40, 167, 69, 0.9)',  # Verde (success Bootstrap)
+                       'Estoque Atual': 'rgba(23, 162, 184, 0.9)' # Azul/Ciano (info Bootstrap)
+                   },
+                   line_shape='spline' # Para linhas mais suaves (opcional)
+                  )
+    
+    fig.update_layout(
+        title_x=0.5, # Centraliza o título
+        xaxis_title="Produtos Populares",
+        yaxis_title="Quantidade",
+        legend_title_text='Métrica:', # Título da Legenda
+        legend=dict(
+            orientation="h",    # Legenda horizontal
+            yanchor="bottom",   # Ancorar na base da legenda
+            y=1.02,             # Posicionar acima da área de plotagem
+            xanchor="right",    # Ancorar à direita da legenda
+            x=1                 # Posicionar à direita da área de plotagem
+        ),
+        xaxis_tickangle=-45 # Inclinar rótulos do eixo X se os nomes dos produtos forem longos
+    )
+    # Assegurar que os marcadores sejam visíveis e talvez com texto
+    fig.update_traces(
+        marker=dict(size=8), 
+        # text=df_melted['Quantidade'], # Se quiser mostrar o valor no ponto (pode poluir)
+        # textposition="top center"    # Posição do texto se habilitado
+    )
+
+    return fig
+

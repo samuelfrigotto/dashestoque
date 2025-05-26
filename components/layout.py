@@ -16,11 +16,6 @@ def criar_layout_principal(df_completo, nome_arquivo, page_size_tabela=20):
         dbc.Col(html.H1("Dashboard de Controle de Estoque", 
                         className="text-center my-4 display-5 fw-bold"), width=12) 
     )
-    
-    info_arquivo_componente = dbc.Row(
-        dbc.Col(html.P(f"Analisando dados do arquivo: {nome_arquivo}", 
-                        className="text-center text-muted mb-4"), width=12)
-    )
 
     abas_componente = dbc.Tabs(
         [
@@ -53,10 +48,11 @@ def criar_layout_principal(df_completo, nome_arquivo, page_size_tabela=20):
         active_tab="tab-estoque-geral",
         className="mt-2"
     )
+    
+
 
     layout = dbc.Container([
         titulo_app,
-        info_arquivo_componente,
         abas_componente 
     ], fluid=True, style={'paddingTop': '20px', 'paddingBottom': '50px'})
     

@@ -1,9 +1,9 @@
 {
     "limite_estoque_baixo": 10,
     "limite_estoque_medio": 100,
-    "excluir_grupos": [],
+    "excluir_grupos": [
+        "061 VASILHAMES"
+    ],
     "excluir_categorias": [],
-    "excluir_produtos_codigos": [
-        "905"
-    ]
+    "excluir_produtos_codigos": []
 }

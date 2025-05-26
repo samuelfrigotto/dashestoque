@@ -2,29 +2,24 @@ import pandas as pd
 from dash import Input, Output, no_update, State, html, dcc 
 import dash_bootstrap_components as dbc
 from app_instance import app 
+import io
 
 from components.graphs.graficos_estoque import (
     criar_grafico_estoque_por_grupo,
     criar_grafico_top_n_produtos_estoque,
     criar_grafico_niveis_estoque,
     criar_figura_vazia,
-    criar_grafico_categorias_com_estoque_baixo 
+    criar_grafico_categorias_com_estoque_baixo,
+    criar_grafico_estoque_produtos_populares,
 )
+from components.tables.table1 import criar_tabela_estoque, criar_tabela_produtos_criticos
 from modules.config_manager import (
-    carregar_definicoes_niveis_estoque, 
-    salvar_definicoes_niveis_estoque,
-    carregar_configuracoes_exclusao,
-    salvar_configuracoes_exclusao   
+    carregar_definicoes_niveis_estoque, salvar_definicoes_niveis_estoque,
+    carregar_configuracoes_exclusao, salvar_configuracoes_exclusao
 )
-from modules.inventory_manager import identificar_produtos_estoque_baixo 
-from components.tables.table1 import criar_tabela_estoque
+from modules.inventory_manager import identificar_produtos_estoque_baixo, identificar_produtos_em_falta
 
 def registrar_callbacks_gerais(df_global_original):
-    """
-    Registra todos os callbacks.
-    df_global_original: O DataFrame principal carregado, antes de qualquer filtro de exclusão.
-    """
-
     @app.callback(
         [Output('card-total-skus', 'children'),
          Output('card-qtd-total-estoque', 'children'),
@@ -33,8 +28,10 @@ def registrar_callbacks_gerais(df_global_original):
          Output('tabela-estoque', 'data'),
          Output('tabela-estoque', 'columns'),
          Output('grafico-estoque-grupo', 'figure'),
+         Output('container-tabela-alerta-estoque-baixo-geral', 'children'),
          Output('grafico-top-n-produtos', 'figure'),
-         Output('grafico-niveis-estoque', 'figure')],
+         Output('grafico-niveis-estoque', 'figure'),
+         Output('grafico-estoque-populares', 'figure')],
         [Input('dropdown-categoria-filtro', 'value'),
          Input('dropdown-grupo-filtro', 'value'),
          Input('input-nome-produto-filtro', 'value'),
@@ -45,66 +42,94 @@ def registrar_callbacks_gerais(df_global_original):
          Input('span-excluidos-produtos-codigos', 'children')]
     )
     def atualizar_dashboard_filtrado(categoria_selecionada, grupo_selecionado, nome_produto_filtrado, 
-                                     ignore_lim_b_span, ignore_lim_m_span,
+                                     limite_baixo_str_span, limite_medio_str_span,
                                      ignore_exc_grp, ignore_exc_cat, ignore_exc_prod):
         
         fig_vazia_grupo = criar_figura_vazia("Volume de Estoque por Grupo")
+        # Placeholder para a tabela de alerta se não houver dados para ela
+        tabela_alerta_placeholder = criar_tabela_produtos_criticos(
+            pd.DataFrame(columns=['Produto', 'Estoque']), 
+            'tabela-alerta-vazia-placeholder', 
+            "Produtos com Estoque Baixo", # Título mais genérico para o placeholder
+            page_size=1, # Irrelevante se vazia
+            altura_tabela='350px' # Altura desejada
+        )
         fig_vazia_top_n = criar_figura_vazia("Top 7 Produtos")
         fig_vazia_niveis = criar_figura_vazia("Produtos por Nível de Estoque")
+        fig_vazia_populares = criar_figura_vazia("Estoque dos Produtos Populares")
 
         if df_global_original is None or df_global_original.empty:
-            colunas_vazias = [{"name": col, "id": col} for col in ['Código', 'Produto', 'Un', 'Estoque', 'Categoria', 'Grupo']]
-            return "0", "0", "0", "0", [], colunas_vazias, fig_vazia_grupo, fig_vazia_top_n, fig_vazia_niveis
+            colunas_vazias_principais = [{"name": col, "id": col} for col in ['Código', 'Produto', 'Un', 'Estoque', 'Categoria', 'Grupo']]
+            return ("0", "0", "0", "0", [], colunas_vazias_principais, 
+                    fig_vazia_grupo, tabela_alerta_placeholder, 
+                    fig_vazia_top_n, fig_vazia_niveis, fig_vazia_populares)
 
+        # ... (Lógica de aplicar exclusões para obter dff como antes) ...
         config_exclusao = carregar_configuracoes_exclusao()
-        grupos_a_excluir = config_exclusao.get("excluir_grupos", [])
-        categorias_a_excluir = config_exclusao.get("excluir_categorias", [])
-        produtos_codigos_a_excluir = config_exclusao.get("excluir_produtos_codigos", [])
-        
- 
-        produtos_codigos_a_excluir = [str(p) for p in produtos_codigos_a_excluir]
-
         dff = df_global_original.copy()
-
-        if grupos_a_excluir:
-            dff = dff[~dff['Grupo'].isin(grupos_a_excluir)]
-        if categorias_a_excluir:
-            dff = dff[~dff['Categoria'].isin(categorias_a_excluir)]
-        if produtos_codigos_a_excluir:
-            dff = dff[~dff['Código'].astype(str).isin(produtos_codigos_a_excluir)]
-
-        if categoria_selecionada:
-            dff = dff[dff['Categoria'] == categoria_selecionada]
-        if grupo_selecionado:
-            dff = dff[dff['Grupo'] == grupo_selecionado]
-        if nome_produto_filtrado and nome_produto_filtrado.strip() != "":
-            dff = dff[dff['Produto'].str.contains(nome_produto_filtrado, case=False, na=False)]
+        grupos_a_excluir = config_exclusao.get("excluir_grupos", []); categorias_a_excluir = config_exclusao.get("excluir_categorias", []); produtos_codigos_a_excluir = [str(p) for p in config_exclusao.get("excluir_produtos_codigos", [])]
+        if grupos_a_excluir: dff = dff[~dff['Grupo'].isin(grupos_a_excluir)]
+        if categorias_a_excluir: dff = dff[~dff['Categoria'].isin(categorias_a_excluir)]
+        if produtos_codigos_a_excluir: dff = dff[~dff['Código'].astype(str).isin(produtos_codigos_a_excluir)]
+        
+        dff_filtrado_interativo = dff.copy()
+        if categoria_selecionada: dff_filtrado_interativo = dff_filtrado_interativo[dff_filtrado_interativo['Categoria'] == categoria_selecionada]
+        if grupo_selecionado: dff_filtrado_interativo = dff_filtrado_interativo[dff_filtrado_interativo['Grupo'] == grupo_selecionado]
+        if nome_produto_filtrado and nome_produto_filtrado.strip() != "": dff_filtrado_interativo = dff_filtrado_interativo[dff_filtrado_interativo['Produto'].str.contains(nome_produto_filtrado, case=False, na=False)]
 
         config_niveis = carregar_definicoes_niveis_estoque()
         limite_baixo_atual = config_niveis.get("limite_estoque_baixo", 10)
         limite_medio_atual = config_niveis.get("limite_estoque_medio", 100)
 
-        if not dff.empty:
-            total_skus_filtrado = dff['Código'].nunique()
-            qtd_total_estoque_filtrado = pd.to_numeric(dff['Estoque'], errors='coerce').fillna(0).sum()
-            num_categorias_filtradas = dff['Categoria'].nunique()
-            num_grupos_filtrados = dff['Grupo'].nunique()
-            dados_tabela_filtrada = dff.to_dict('records')
+        # Gerar tabela de produtos com estoque baixo
+        df_estoque_realmente_baixo = identificar_produtos_estoque_baixo(dff_filtrado_interativo, limite_baixo_atual)
+        
+        page_size_tabela_baixo = len(df_estoque_realmente_baixo)
+        if page_size_tabela_baixo == 0: # Evitar page_size=0 que pode dar erro
+            page_size_tabela_baixo = 1 # Mínimo para a DataTable
+            
+        tabela_estoque_baixo_componente = criar_tabela_produtos_criticos(
+            df_estoque_realmente_baixo,
+            id_tabela='tabela-alerta-estoque-baixo-geral-cb', 
+            titulo_alerta=f"Produtos com Estoque Baixo (≤ {limite_baixo_atual:g})", # Título aqui
+            page_size=page_size_tabela_baixo, # Para mostrar todos os itens da lista de baixo estoque
+            altura_tabela='350px' # Altura ajustada conforme pedido
+        )
+        
+        # ... (Restante da lógica para df_agrupado_para_grafico, fig_estoque_grupo, estatísticas, outros gráficos e tabela principal) ...
+        # (O código abaixo é uma repetição da sua última versão funcional, com pequenas adaptações para dff_filtrado_interativo)
 
-            fig_estoque_grupo = criar_grafico_estoque_por_grupo(dff)
-            fig_top_n = criar_grafico_top_n_produtos_estoque(dff, n=7)
-            fig_niveis = criar_grafico_niveis_estoque(dff, limite_baixo_atual, limite_medio_atual)
+        df_agrupado_para_grafico = pd.DataFrame()
+        if not dff_filtrado_interativo.empty:
+            df_grupo_sum = dff_filtrado_interativo.copy()
+            df_grupo_sum['Estoque'] = pd.to_numeric(df_grupo_sum['Estoque'], errors='coerce').fillna(0)
+            df_agrupado_para_grafico = df_grupo_sum.groupby('Grupo', as_index=False)['Estoque'].sum()
+            df_agrupado_para_grafico = df_agrupado_para_grafico[df_agrupado_para_grafico['Estoque'] > 0]
+        
+        fig_estoque_grupo = criar_grafico_estoque_por_grupo(df_agrupado_para_grafico)
+
+
+        if not dff_filtrado_interativo.empty:
+            total_skus_filtrado = dff_filtrado_interativo['Código'].nunique()
+            qtd_total_estoque_filtrado = pd.to_numeric(dff_filtrado_interativo['Estoque'], errors='coerce').fillna(0).sum()
+            num_categorias_filtradas = dff_filtrado_interativo['Categoria'].nunique()
+            num_grupos_filtrados = dff_filtrado_interativo['Grupo'].nunique()
+            dados_tabela_filtrada = dff_filtrado_interativo.to_dict('records')
+
+            fig_top_n = criar_grafico_top_n_produtos_estoque(dff_filtrado_interativo, n=7)
+            fig_niveis = criar_grafico_niveis_estoque(dff_filtrado_interativo, limite_baixo_atual, limite_medio_atual)
+            fig_populares = criar_grafico_estoque_produtos_populares(dff_filtrado_interativo, n=7)
         else:
             total_skus_filtrado, qtd_total_estoque_filtrado, num_categorias_filtradas, num_grupos_filtrados = 0,0,0,0
             dados_tabela_filtrada = []
-            fig_estoque_grupo = criar_figura_vazia("Volume de Estoque por Grupo (Sem dados com filtros atuais)")
+            if df_agrupado_para_grafico.empty: fig_estoque_grupo = fig_vazia_grupo # Já definido antes
             fig_top_n = criar_figura_vazia(f"Top 7 Produtos (Sem dados com filtros atuais)")
             fig_niveis = criar_figura_vazia("Níveis de Estoque (Sem dados com filtros atuais)")
+            fig_populares = criar_figura_vazia("Estoque dos Produtos Populares (Sem dados com filtros atuais)")
+            # A tabela_estoque_baixo_componente já lida com df vazio mostrando um Alert.
             
         colunas_desejadas = ['Código', 'Produto', 'Un', 'Estoque', 'Categoria', 'Grupo']
-
-        colunas_base = dff.columns if not dff.empty else df_global_original.columns 
-        
+        colunas_base = dff_filtrado_interativo.columns if not dff_filtrado_interativo.empty else df_global_original.columns 
         colunas_existentes_ordenadas = [col for col in colunas_desejadas if col in colunas_base]
         for col in colunas_base:
             if col not in colunas_existentes_ordenadas:
@@ -119,9 +144,13 @@ def registrar_callbacks_gerais(df_global_original):
             dados_tabela_filtrada,
             colunas_para_dash_filtradas,
             fig_estoque_grupo,
+            tabela_estoque_baixo_componente,
             fig_top_n,
-            fig_niveis
+            fig_niveis,
+            fig_populares
         )
+
+
     @app.callback(
         Output('dropdown-grupo-filtro', 'value', allow_duplicate=True),
         Input('dropdown-categoria-filtro', 'value'),
@@ -264,3 +293,25 @@ def registrar_callbacks_gerais(df_global_original):
             html.Hr(),
             tabela
         ])
+    
+    @app.callback(
+        Output("download-tabela-geral-excel", "data"),
+        Input("btn-exportar-tabela-geral", "n_clicks"),
+        State("tabela-estoque", "data"), # Pega os dados ATUAIS da tabela (já filtrados)
+        prevent_initial_call=True
+    )
+    def exportar_tabela_principal_excel(n_clicks, dados_tabela_atual):
+        if n_clicks is None or not dados_tabela_atual:
+            return no_update # Ou levante um PreventUpdate
+
+        # Os dados_tabela_atual já estão no formato de lista de dicionários
+        df_para_exportar = pd.DataFrame(dados_tabela_atual)
+        
+        # Selecionar e reordenar colunas para exportação, se necessário
+        # (Opcional, se quiser que o Excel tenha colunas específicas ou ordem diferente)
+        colunas_export = ['Código', 'Produto', 'Un', 'Estoque', 'Categoria', 'Grupo', 'VendaMensal'] # Incluindo VendaMensal se existir
+        colunas_presentes_para_export = [col for col in colunas_export if col in df_para_exportar.columns]
+        df_para_exportar = df_para_exportar[colunas_presentes_para_export]
+
+        # Usar dcc.send_data_frame para facilitar a criação do arquivo Excel
+        return dcc.send_data_frame(df_para_exportar.to_excel, "estoque_filtrado.xlsx", sheet_name="Estoque", index=False)

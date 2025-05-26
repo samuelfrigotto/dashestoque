@@ -1,7 +1,5 @@
-# modules/data_loader.py
 import pandas as pd
 
-# Definindo os prefixos como constantes para facilitar a manutenção
 PREFIXO_CATEGORIA = "* Total Categoria :"
 PREFIXO_GRUPO = "* Total GRUPO :"
 
@@ -10,10 +8,6 @@ def _limpar_valor_estoque(serie_estoque):
     if not pd.api.types.is_string_dtype(serie_estoque):
         serie_estoque = serie_estoque.astype(str)
     
-    # Remove separador de milhar (ponto) e substitui vírgula decimal por ponto
-    # Ex: "1.234,50" -> "1234,50" -> "1234.50"
-    # Ex: "1.000" -> "1000" (se for inteiro)
-    # Ex: "123,45" -> "123.45"
     serie_limpa = serie_estoque.str.replace('.', '', regex=False) 
     serie_limpa = serie_limpa.str.replace(',', '.', regex=False)
     return pd.to_numeric(serie_limpa, errors='coerce')
@@ -32,20 +26,18 @@ def carregar_apenas_produtos(caminho_arquivo):
             delimiter=';',
             encoding='latin-1',
             skiprows=4,
-            usecols=[0, 1, 2, 7], # Colunas A, B, C, H
+            usecols=[0, 1, 2, 7],
             header=None,
             low_memory=False,
-            dtype=str  # Ler todas as colunas selecionadas como string inicialmente
+            dtype=str 
         )
         df.columns = ['Código', 'Un', 'Produto', 'Estoque']
 
-        # Filtrar produtos com código válido
-        df.dropna(subset=['Código'], inplace=True) # Remove linhas onde o 'Código' original era NaN
-        df['Código'] = df['Código'].str.strip()
-        df = df[df['Código'] != ''] # Remove linhas onde 'Código' é string vazia após strip
 
-        # Remover linhas de total de categoria e grupo explicitamente
-        # Usar na=False para tratar possíveis NaNs na coluna Produto após strip como não começando com o prefixo
+        df.dropna(subset=['Código'], inplace=True) 
+        df['Código'] = df['Código'].str.strip()
+        df = df[df['Código'] != '']
+
         df['Produto_strip'] = df['Produto'].str.strip()
         df = df[~df['Produto_strip'].str.startswith(PREFIXO_CATEGORIA, na=False)]
         df = df[~df['Produto_strip'].str.startswith(PREFIXO_GRUPO, na=False)]

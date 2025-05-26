@@ -1,0 +1,9 @@
+{
+    "limite_estoque_baixo": 10,
+    "limite_estoque_medio": 100,
+    "excluir_grupos": [],
+    "excluir_categorias": [],
+    "excluir_produtos_codigos": [
+        "905"
+    ]
+}

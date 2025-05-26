@@ -1,4 +1,3 @@
-# components/tabs/tab_estoque_geral.py
 import pandas as pd
 import dash_bootstrap_components as dbc
 from dash import html, dcc
@@ -23,7 +22,7 @@ def criar_conteudo_aba_estoque_geral(df_completo, page_size_tabela=20):
         dbc.Col(dbc.Card([
             dbc.CardHeader("Total de Produtos (SKUs)"),
             dbc.CardBody([html.H4(f"{total_skus_inicial:,}", className="card-title", id="card-total-skus")])
-        ], className="shadow-sm h-100"), width=6, lg=3, className="mb-4"), # Adicionado shadow-sm e h-100, mb-4
+        ], className="shadow-sm h-100"), width=6, lg=3, className="mb-4"), 
         dbc.Col(dbc.Card([
             dbc.CardHeader("Quantidade Total em Estoque"),
             dbc.CardBody([html.H4(f"{qtd_total_estoque_inicial:,.0f}", className="card-title", id="card-qtd-total-estoque")])
@@ -36,18 +35,18 @@ def criar_conteudo_aba_estoque_geral(df_completo, page_size_tabela=20):
             dbc.CardHeader("Grupos (Visão Atual)"),
             dbc.CardBody([html.H4(f"{num_grupos_inicial:,}", className="card-title", id="card-num-grupos")])
         ], className="shadow-sm h-100"), width=6, lg=3, className="mb-4"),
-    ], className="mb-3") # Reduzida margem inferior da linha de cards
+    ], className="mb-3")
 
     filtros_dropdown_componente = dbc.Row([
         dbc.Col([
-            dbc.Label("Filtrar por Grupo:", className="fw-bold"), # Adicionado fw-bold
+            dbc.Label("Filtrar por Grupo:", className="fw-bold"),
             dcc.Dropdown(id='dropdown-grupo-filtro', options=opcoes_grupo, value=None, multi=False, placeholder="Selecione um Grupo")
-        ], width=12, md=6, className="mb-3"), # Aumentado mb
+        ], width=12, md=6, className="mb-3"),
         dbc.Col([
             dbc.Label("Filtrar por Categoria:", className="fw-bold"),
             dcc.Dropdown(id='dropdown-categoria-filtro', options=opcoes_categoria, value=None, multi=False, placeholder="Selecione uma Categoria")
         ], width=12, md=6, className="mb-3")
-    ], className="mt-2") # Adicionado mt-2
+    ], className="mt-2") 
 
     filtro_texto_e_reset_componente = dbc.Row([
         dbc.Col([
@@ -59,7 +58,7 @@ def criar_conteudo_aba_estoque_geral(df_completo, page_size_tabela=20):
             )
         ], width=12, md=10, className="mb-3"),
         dbc.Col([
-            dbc.Label("Ações:", className="fw-bold", style={'visibility': 'visible'}), # Label visível para alinhar
+            dbc.Label("Ações:", className="fw-bold", style={'visibility': 'visible'}),
             dbc.Button("Resetar Todos", id="btn-resetar-filtros", color="secondary", className="w-100")
         ], width=12, md=2, className="d-flex align-items-end mb-3")
     ], className="align-items-center")
@@ -67,9 +66,9 @@ def criar_conteudo_aba_estoque_geral(df_completo, page_size_tabela=20):
     area_graficos = dbc.Container([
         dbc.Row([
             dbc.Col(dbc.Card([
-                dbc.CardHeader("Volume de Estoque por Grupo"), # Adicionado CardHeader
-                dbc.CardBody(dcc.Graph(id='grafico-estoque-grupo', config={'displayModeBar': False})) # config para remover a barra de modo Plotly
-            ]), width=12, className="mb-4 shadow-sm"), # Adicionado shadow-sm e mb-4
+                dbc.CardHeader("Volume de Estoque por Grupo"), 
+                dbc.CardBody(dcc.Graph(id='grafico-estoque-grupo', config={'displayModeBar': False})) 
+            ]), width=12, className="mb-4 shadow-sm"),
         ]),
         dbc.Row([
             dbc.Col(dbc.Card([
@@ -81,19 +80,15 @@ def criar_conteudo_aba_estoque_geral(df_completo, page_size_tabela=20):
                 dbc.CardBody(dcc.Graph(id='grafico-niveis-estoque', config={'displayModeBar': False}))
             ]), md=6, className="mb-4 shadow-sm"),
         ])
-    ], fluid=True, className="mt-4") # Removido mb-4 daqui, adicionado aos cards individuais
+    ], fluid=True, className="mt-4")
         
     df_para_tabela_dash = df_completo if not df_completo.empty else pd.DataFrame()
     tabela_estoque_componente = criar_tabela_estoque(df_para_tabela_dash, page_size=page_size_tabela) 
 
     return html.Div([
-        # Removido o primeiro Hr(), o espaçamento dos cards já cria separação
         cards_estatisticas,
-        # Removido o Hr() aqui também
         filtros_dropdown_componente,
         filtro_texto_e_reset_componente,
-        # Removido o Hr() aqui
         area_graficos,
-        # Removido o Hr() antes da tabela
-        dbc.Row(dbc.Col(tabela_estoque_componente, width=12), className="mt-4") # Adicionado mt-4 para espaço acima da tabela
+        dbc.Row(dbc.Col(tabela_estoque_componente, width=12), className="mt-4") 
     ])

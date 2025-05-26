@@ -43,9 +43,7 @@ def carregar_apenas_produtos(caminho_arquivo):
         df = df[~df['Produto_strip'].str.startswith(PREFIXO_GRUPO, na=False)]
         df.drop(columns=['Produto_strip'], inplace=True)
         
-        # Converter 'Estoque' para numérico
         df['Estoque'] = _limpar_valor_estoque(df['Estoque'])
-        # Opcional: df.dropna(subset=['Estoque'], inplace=True) # Remover produtos com estoque inválido/NaN
 
         if df.empty:
             print(f"Nenhum produto encontrado após a filtragem no arquivo: {caminho_arquivo}")
@@ -55,7 +53,7 @@ def carregar_apenas_produtos(caminho_arquivo):
 
     except FileNotFoundError:
         print(f"Erro: O arquivo {caminho_arquivo} não foi encontrado.")
-        return pd.DataFrame(columns=['Código', 'Un', 'Produto', 'Estoque']) # Retorna DataFrame vazio com colunas esperadas
+        return pd.DataFrame(columns=['Código', 'Un', 'Produto', 'Estoque'])
     except Exception as e:
         print(f"Erro ao carregar (apenas produtos) os dados de estoque: {e}")
         return pd.DataFrame(columns=['Código', 'Un', 'Produto', 'Estoque'])
@@ -71,15 +69,13 @@ def carregar_produtos_com_hierarquia(caminho_arquivo):
             delimiter=';',
             encoding='latin-1',
             skiprows=4,
-            usecols=[0, 1, 2, 7], # Colunas A, B, C, H
+            usecols=[0, 1, 2, 7], 
             header=None,
             low_memory=False,
-            dtype=str # Ler tudo como string para manipulação inicial
+            dtype=str 
         )
         df_full.columns = ['Código', 'Un', 'Produto_Original', 'Estoque_Original']
-
-        # Inicializar colunas para Categoria e Grupo extraídos
-        df_full['CategoriaExtraida'] = pd.NA # Usar pd.NA para consistência
+        df_full['CategoriaExtraida'] = pd.NA 
         df_full['GrupoExtraido'] = pd.NA
 
         for index, row in df_full.iterrows():
@@ -93,31 +89,21 @@ def carregar_produtos_com_hierarquia(caminho_arquivo):
                 nome_grupo = produto_original_strip[len(PREFIXO_GRUPO):].strip()
                 df_full.loc[index, 'GrupoExtraido'] = nome_grupo
         
-        # Propagar os valores de categoria e grupo para as linhas acima (produtos)
         df_full['Categoria'] = df_full['CategoriaExtraida'].bfill()
         df_full['Grupo'] = df_full['GrupoExtraido'].bfill()
-
-        # Filtrar para manter apenas as linhas de produtos reais
         df_produtos = df_full.copy()
-
-        # Condição 1: Código deve ser válido (não NaN, não vazio)
         df_produtos.dropna(subset=['Código'], inplace=True)
         df_produtos['Código'] = df_produtos['Código'].str.strip()
         df_produtos = df_produtos[df_produtos['Código'] != '']
 
-        # Condição 2: Não deve ser uma linha de total (verificando Produto_Original)
-        # Usar na=False para tratar possíveis NaNs na coluna Produto_Original após strip como não começando com o prefixo
         df_produtos['Produto_Original_strip'] = df_produtos['Produto_Original'].str.strip()
         df_produtos = df_produtos[~df_produtos['Produto_Original_strip'].str.startswith(PREFIXO_CATEGORIA, na=False)]
         df_produtos = df_produtos[~df_produtos['Produto_Original_strip'].str.startswith(PREFIXO_GRUPO, na=False)]
-        
-        # Selecionar e renomear colunas finais
+
         df_produtos = df_produtos[['Código', 'Un', 'Produto_Original', 'Estoque_Original', 'Categoria', 'Grupo']].copy() # Usar .copy() para evitar SettingWithCopyWarning
         df_produtos.rename(columns={'Produto_Original': 'Produto', 'Estoque_Original': 'Estoque'}, inplace=True)
 
-        # Converter 'Estoque' para numérico
         df_produtos['Estoque'] = _limpar_valor_estoque(df_produtos['Estoque'])
-        # Opcional: df_produtos.dropna(subset=['Estoque'], inplace=True)
 
         if df_produtos.empty:
             print(f"Nenhum produto encontrado após atribuição de hierarquia e filtragem no arquivo: {caminho_arquivo}")
@@ -128,7 +114,7 @@ def carregar_produtos_com_hierarquia(caminho_arquivo):
 
     except FileNotFoundError:
         print(f"Erro: O arquivo {caminho_arquivo} não foi encontrado.")
-        return pd.DataFrame() # Retornar DataFrame vazio genérico
+        return pd.DataFrame()
     except Exception as e:
         print(f"Erro ao carregar (com hierarquia) os dados de estoque: {e}")
         return pd.DataFrame(columns=['Código', 'Un', 'Produto', 'Estoque', 'Categoria', 'Grupo'])

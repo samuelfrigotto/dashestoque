@@ -1,9 +1,7 @@
-# components/graphs/graficos_estoque.py
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-# --- Manter estas funções como estão ---
 def criar_figura_vazia(titulo="Sem dados para exibir"):
     """Cria uma figura Plotly vazia com um título."""
     fig = go.Figure()
@@ -78,37 +76,33 @@ def criar_grafico_top_n_produtos_estoque(df, n=7):
     )
     return fig
 
-# --- SUBSTITUA AS DUAS FUNÇÕES ABAIXO ---
 
 def _classificar_nivel_estoque(estoque_val, limite_baixo, limite_medio):
     """
     Classifica um valor de estoque individual baseado nos limites fornecidos.
     """
-    # Tenta converter limites para float, caso venham como string de um input ou config
     try:
         lim_b = float(limite_baixo)
         lim_m = float(limite_medio)
     except (ValueError, TypeError):
-        # Se os limites não forem numéricos válidos, retorna 'Desconhecido' para o nível
         return 'Desconhecido (Limites Inválidos)'
 
-    if pd.isna(estoque_val): # Checa se o próprio valor do estoque é NaN
+    if pd.isna(estoque_val):
         return 'Desconhecido'
     
-    # Garante que estoque_val é numérico para comparação
     try:
         val = float(estoque_val)
     except (ValueError, TypeError):
         return 'Desconhecido'
 
     if val <= lim_b:
-        return f'Baixo (≤{lim_b:g})' # :g para formatação geral de float
-    elif val <= lim_m: # Implícito que val > lim_b
+        return f'Baixo (≤{lim_b:g})'
+    elif val <= lim_m:
         return f'Médio ({lim_b:g} < E ≤ {lim_m:g})'
-    else: # val > lim_m
+    else: 
         return f'Alto (>{lim_m:g})'
 
-def criar_grafico_niveis_estoque(df, limite_baixo=10, limite_medio=100): # Adicionados parâmetros com defaults
+def criar_grafico_niveis_estoque(df, limite_baixo=10, limite_medio=100): 
     """
     Cria um gráfico de barras da contagem de produtos por nível de estoque,
     usando limites configuráveis.
@@ -117,10 +111,8 @@ def criar_grafico_niveis_estoque(df, limite_baixo=10, limite_medio=100): # Adici
         return criar_figura_vazia("Níveis de Estoque (Sem Dados)")
 
     df_plot = df.copy()
-    # Garante que 'Estoque' é numérico antes de aplicar a classificação
     df_plot['EstoqueNum'] = pd.to_numeric(df_plot['Estoque'], errors='coerce') 
 
-    # Aplica a classificação usando os limites fornecidos
     df_plot['NivelEstoque'] = df_plot['EstoqueNum'].apply(
         lambda x: _classificar_nivel_estoque(x, limite_baixo, limite_medio)
     )
@@ -128,13 +120,10 @@ def criar_grafico_niveis_estoque(df, limite_baixo=10, limite_medio=100): # Adici
     contagem_niveis = df_plot['NivelEstoque'].value_counts().reset_index()
     contagem_niveis.columns = ['NivelEstoque', 'Contagem']
     
-    # Gerar rótulos de categoria dinamicamente
     cat_baixo_label = f'Baixo (≤{float(limite_baixo):g})'
     cat_medio_label = f'Médio ({float(limite_baixo):g} < E ≤ {float(limite_medio):g})'
     cat_alto_label = f'Alto (>{float(limite_medio):g})'
     
-    # Ordem e cores para o gráfico
-    # Inclui todas as possíveis categorias que a função _classificar_nivel_estoque pode retornar
     ordem_niveis_plot = [
         cat_baixo_label, 
         cat_medio_label, 
@@ -144,14 +133,13 @@ def criar_grafico_niveis_estoque(df, limite_baixo=10, limite_medio=100): # Adici
         'Desconhecido (Limites Inválidos)'
     ]
     
-    # Filtra para apenas os níveis presentes nos dados para a categorização
     niveis_presentes_dados = df_plot['NivelEstoque'].unique()
     ordem_final_para_plot = [nivel for nivel in ordem_niveis_plot if nivel in niveis_presentes_dados]
 
 
     contagem_niveis['NivelEstoque'] = pd.Categorical(
         contagem_niveis['NivelEstoque'], 
-        categories=ordem_final_para_plot, # Usa apenas os níveis que realmente existem nos dados para a ordem
+        categories=ordem_final_para_plot, 
         ordered=True
     )
     contagem_niveis = contagem_niveis.sort_values('NivelEstoque').dropna(subset=['NivelEstoque'])
@@ -159,12 +147,11 @@ def criar_grafico_niveis_estoque(df, limite_baixo=10, limite_medio=100): # Adici
     if contagem_niveis.empty or contagem_niveis['Contagem'].sum() == 0:
         return criar_figura_vazia("Níveis de Estoque (Sem Produtos para Classificar)")
 
-    # Cores personalizadas (opcional)
     mapa_cores = {
-        cat_baixo_label: 'rgba(255, 76, 76, 0.8)', # Vermelho
-        cat_medio_label: 'rgba(255, 191, 0, 0.8)', # Laranja/Amarelo
-        cat_alto_label: 'rgba(76, 175, 80, 0.8)', # Verde
-        'Desconhecido (Estoque NaN)': 'rgba(158, 158, 158, 0.8)', # Cinza
+        cat_baixo_label: 'rgba(255, 76, 76, 0.8)',
+        cat_medio_label: 'rgba(255, 191, 0, 0.8)', 
+        cat_alto_label: 'rgba(76, 175, 80, 0.8)', 
+        'Desconhecido (Estoque NaN)': 'rgba(158, 158, 158, 0.8)',
         'Desconhecido (Estoque Inválido)': 'rgba(158, 158, 158, 0.8)',
         'Desconhecido (Limites Inválidos)': 'rgba(100, 100, 100, 0.8)'
     }
@@ -194,7 +181,6 @@ def criar_grafico_categorias_com_estoque_baixo(df_estoque_baixo, top_n=10):
     contagem_categorias = df_estoque_baixo.groupby('Categoria')['Código'].nunique().reset_index()
     contagem_categorias.rename(columns={'Código': 'NumeroDeProdutosBaixos'}, inplace=True)
     
-    # Pegar Top N ou todos se menos que N
     contagem_categorias_top_n = contagem_categorias.nlargest(top_n, 'NumeroDeProdutosBaixos')
     
     if contagem_categorias_top_n.empty:

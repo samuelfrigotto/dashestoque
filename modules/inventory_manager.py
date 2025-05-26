@@ -41,10 +41,9 @@ def identificar_produtos_estoque_baixo(df_estoque, limite_estoque_baixo):
     df_copia = df_estoque.copy()
     df_copia['EstoqueNum'] = pd.to_numeric(df_copia['Estoque'], errors='coerce')
     
-    # Filtrar produtos com estoque baixo, excluindo NaNs resultantes da conversão de 'EstoqueNum'
     df_baixo = df_copia[
         (df_copia['EstoqueNum'].notna()) & 
         (df_copia['EstoqueNum'] <= limite)
     ].copy()
     
-    return df_baixo.drop(columns=['EstoqueNum'], errors='ignore') # Remove coluna auxiliar se existir
+    return df_baixo.drop(columns=['EstoqueNum'], errors='ignore')

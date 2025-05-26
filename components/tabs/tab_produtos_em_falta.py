@@ -1,9 +1,7 @@
-# components/tabs/tab_produtos_em_falta.py
-from dash import html, dcc # dcc pode ser necessário para futuros componentes aqui
+from dash import html, dcc 
 import dash_bootstrap_components as dbc
 import pandas as pd
 from modules.inventory_manager import identificar_produtos_em_falta
-# Importar a função de criação de tabela do local correto
 from ..tables.table1 import criar_tabela_estoque 
 
 def criar_conteudo_aba_produtos_em_falta(df_completo, page_size_tabela=10):
@@ -16,14 +14,11 @@ def criar_conteudo_aba_produtos_em_falta(df_completo, page_size_tabela=10):
             dbc.Alert("Não há dados de estoque para processar.", color="warning")
         ])
 
-    df_em_falta = identificar_produtos_em_falta(df_completo) # Usando limite padrão de <= 0
+    df_em_falta = identificar_produtos_em_falta(df_completo)
 
     if df_em_falta.empty:
         conteudo = dbc.Alert("Nenhum produto encontrado em falta!", color="success")
     else:
-        # Reutilizar a função de criação de tabela
-        # Passamos o DataFrame de produtos em falta
-        # Pode ser necessário ajustar as colunas se quisermos uma visualização diferente para esta tabela
         tabela_produtos_em_falta = criar_tabela_estoque(
             df_em_falta, 
             id_tabela='tabela-produtos-em-falta', 

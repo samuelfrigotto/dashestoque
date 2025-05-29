@@ -2,7 +2,7 @@ from app_instance import app, server
 from modules.data_loader import carregar_produtos_com_hierarquia
 from components.layout import criar_layout_principal
 from callbacks.geral_callbacks import registrar_callbacks_gerais
-caminho_arquivo_csv = "data/16-05.CSV"
+caminho_arquivo_csv = "data/DAMI29-05.CSV"
 df_visualizar_global = carregar_produtos_com_hierarquia(caminho_arquivo_csv)
 registrar_callbacks_gerais(df_visualizar_global) 
 

@@ -62,7 +62,7 @@ def criar_conteudo_aba_estoque_geral(df_completo, page_size_tabela=20):
 
 
 
-    grafico_sec_niveis_card = dbc.Card([dbc.CardBody(dcc.Graph(id='grafico-niveis-estoque', config={'displayModeBar': False}, style={'height': '400px'}))], className="shadow-sm h-100")
+    grafico_sec_niveis_card = dbc.Card([dbc.CardBody(dcc.Graph(id='grafico-niveis-estoque', config={'displayModeBar': False}))], className="shadow-sm h-100")
     tabela_estoque_baixo_card = dbc.Card([dbc.CardBody(html.Div(id='container-tabela-alerta-estoque-baixo-geral'))], className="shadow-sm h-100", style={'height': '400px'})
     grafico_cat_estoque_baixo_card = dbc.Card([dbc.CardBody(dcc.Graph(id='grafico-categorias-estoque-baixo-visao-geral', config={'displayModeBar': False}))], className="shadow-sm")
     df_para_tabela_dash = df_completo if not df_completo.empty else pd.DataFrame()
@@ -116,10 +116,10 @@ def criar_conteudo_aba_estoque_geral(df_completo, page_size_tabela=20):
             )
         ], className="g-0"),
         html.Hr(className="my-4"),
-        dbc.Row([ 
-            dbc.Col(grafico_sec_top_n_card_clicavel, width=12, lg=4, className="mb-3"),
-            dbc.Col(grafico_sec_niveis_card_clicavel, width=12, lg=4, className="mb-3"),
-            dbc.Col(tabela_estoque_baixo_card, width=12, lg=4, className="mb-3"),
+        dbc.Row([
+            dbc.Col(grafico_sec_top_n_card_clicavel, width=12, lg=4),
+            dbc.Col(grafico_sec_niveis_card_clicavel, width=12, lg=4),
+            dbc.Col(tabela_estoque_baixo_card, width=12, lg=4), 
         ], className="g-3", align="stretch"),
         html.Hr(className="my-4"),
         dbc.Row([ 
@@ -132,7 +132,7 @@ def criar_conteudo_aba_estoque_geral(df_completo, page_size_tabela=20):
             dbc.Col(botao_exportar_excel, width="auto") 
         ], className="mt-3 justify-content-start"),
         download_component,
-        modal_grafico_donut,
+        modal_grafico_donut, 
         modal_grafico_niveis,
         store_dados_filtrados_modais
     ], className="py-3")

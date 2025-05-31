@@ -10,7 +10,7 @@ MARGENS_GRAFICO_PADRAO = dict(l=40, r=20, t=70, b=50)
 MARGENS_GRAFICO_HORIZONTAL = dict(l=120, r=20, t=70, b=40)
 MARGENS_GRAFICO_COMPACTO = dict(l=20, r=20, t=40, b=20)
 
-def criar_figura_vazia(titulo="Sem dados para exibir"):
+def criar_figura_vazia(titulo="Sem dados para exibir", height=None):
     fig = go.Figure()
     fig.update_layout(
         title_text=titulo,

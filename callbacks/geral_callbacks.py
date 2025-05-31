@@ -21,13 +21,6 @@ from modules.config_manager import (
 from modules.inventory_manager import identificar_produtos_estoque_baixo, identificar_produtos_em_falta
 
 def registrar_callbacks_gerais(df_global_original):
-    # callbacks/geral_callbacks.py
-# ... (Suas importações existentes: pd, Input, Output, etc., app, funções de gráfico, 
-#      funções de tabela, config_manager, inventory_manager)
-# Certifique-se que criar_grafico_categorias_com_estoque_baixo está importada de components.graphs.graficos_estoque
-# e identificar_produtos_estoque_baixo de modules.inventory_manager
-
-# Dentro da função registrar_callbacks_gerais(df_global_original):
 
     @app.callback(
         [Output('card-total-skus', 'children'),
@@ -37,11 +30,11 @@ def registrar_callbacks_gerais(df_global_original):
          Output('tabela-estoque', 'data'),
          Output('tabela-estoque', 'columns'),
          Output('grafico-estoque-grupo', 'figure'),
-         Output('container-tabela-alerta-estoque-baixo-geral', 'children'), # Tabela de alerta (estoque baixo)
+         Output('container-tabela-alerta-estoque-baixo-geral', 'children'), 
          Output('grafico-top-n-produtos', 'figure'),
          Output('grafico-niveis-estoque', 'figure'),
          Output('grafico-estoque-populares', 'figure'),
-         Output('grafico-categorias-estoque-baixo-visao-geral', 'figure')], # <<< NOVO OUTPUT
+         Output('grafico-categorias-estoque-baixo-visao-geral', 'figure')], 
         [Input('dropdown-categoria-filtro', 'value'),
          Input('dropdown-grupo-filtro', 'value'),
          Input('input-nome-produto-filtro', 'value'),
@@ -55,7 +48,6 @@ def registrar_callbacks_gerais(df_global_original):
                                      limite_baixo_str_span, limite_medio_str_span,
                                      ignore_exc_grp, ignore_exc_cat, ignore_exc_prod):
         
-        # Figuras vazias para todos os gráficos
         fig_vazia_grupo = criar_figura_vazia("Volume de Estoque por Grupo")
         tabela_alerta_vazia = criar_tabela_produtos_criticos(pd.DataFrame(columns=['Produto', 'Estoque']), 'tabela-alerta-vazia-geral-cb-placeholder', "Produtos com Estoque Baixo", page_size=10, altura_tabela='250px')
         fig_vazia_top_n = criar_figura_vazia("Top 7 Produtos")
@@ -70,7 +62,6 @@ def registrar_callbacks_gerais(df_global_original):
                     fig_vazia_top_n, fig_vazia_niveis, fig_vazia_populares,
                     fig_vazia_cat_baixo_geral)
 
-        # --- Lógica de Filtros (Exclusão e Interativos) ---
         config_exclusao = carregar_configuracoes_exclusao()
         dff = df_global_original.copy()
         grupos_a_excluir = config_exclusao.get("excluir_grupos", []); categorias_a_excluir = config_exclusao.get("excluir_categorias", []); produtos_codigos_a_excluir = [str(p) for p in config_exclusao.get("excluir_produtos_codigos", [])]
@@ -83,26 +74,21 @@ def registrar_callbacks_gerais(df_global_original):
         if grupo_selecionado: dff_filtrado_interativo = dff_filtrado_interativo[dff_filtrado_interativo['Grupo'] == grupo_selecionado]
         if nome_produto_filtrado and nome_produto_filtrado.strip() != "": dff_filtrado_interativo = dff_filtrado_interativo[dff_filtrado_interativo['Produto'].str.contains(nome_produto_filtrado, case=False, na=False)]
 
-        # --- Carregar Limites ---
         config_niveis = carregar_definicoes_niveis_estoque()
         limite_baixo_atual = config_niveis.get("limite_estoque_baixo", 10)
         limite_medio_atual = config_niveis.get("limite_estoque_medio", 100)
 
-        # --- Dados para Tabela de Alerta de Estoque Baixo (na Visão Geral) ---
         df_estoque_realmente_baixo = identificar_produtos_estoque_baixo(dff_filtrado_interativo, limite_baixo_atual)
         tabela_estoque_baixo_componente = criar_tabela_produtos_criticos(
             df_estoque_realmente_baixo,
             id_tabela='tabela-alerta-estoque-baixo-geral-cb', 
             titulo_alerta=f"Alerta: Estoque Baixo (≤ {limite_baixo_atual:g})",
             page_size=len(df_estoque_realmente_baixo) if not df_estoque_realmente_baixo.empty else 1,
-            altura_tabela='400px' # <<<--- AJUSTE A ALTURA AQUI (era 350px, mudei para 400px)
+            altura_tabela='320px'
         )
         
-        # --- Gerar o Gráfico: Categorias com Estoque Baixo ---
-        # Usa o mesmo df_estoque_realmente_baixo
         fig_categorias_estoque_baixo_geral = criar_grafico_categorias_com_estoque_baixo(df_estoque_realmente_baixo)
         
-        # --- Outros Gráficos e Dados para Tabela Principal ---
         df_agrupado_para_grafico = pd.DataFrame()
         if not dff_filtrado_interativo.empty:
             df_grupo_sum = dff_filtrado_interativo.copy()
@@ -130,7 +116,6 @@ def registrar_callbacks_gerais(df_global_original):
             fig_populares = criar_figura_vazia("Estoque dos Produtos Populares (Sem dados com filtros atuais)")
             if df_estoque_realmente_baixo.empty: fig_categorias_estoque_baixo_geral = fig_vazia_cat_baixo_geral
             
-        # ... (lógica das colunas da tabela principal como antes) ...
         colunas_desejadas = ['Código', 'Produto', 'Un', 'Estoque', 'Categoria', 'Grupo']
         colunas_base = dff_filtrado_interativo.columns if not dff_filtrado_interativo.empty else df_global_original.columns 
         colunas_existentes_ordenadas = [col for col in colunas_desejadas if col in colunas_base]
@@ -148,13 +133,12 @@ def registrar_callbacks_gerais(df_global_original):
             dados_tabela_filtrada,
             colunas_para_dash_filtradas,
             fig_estoque_grupo,
-            tabela_estoque_baixo_componente, # Tabela de alerta (já estava)
+            tabela_estoque_baixo_componente, 
             fig_top_n,
             fig_niveis,
             fig_populares,
-            fig_categorias_estoque_baixo_geral # <<< RETORNA A FIGURA DO NOVO GRÁFICO
+            fig_categorias_estoque_baixo_geral 
         )
-
 
     @app.callback(
         Output('dropdown-grupo-filtro', 'value', allow_duplicate=True),
@@ -302,62 +286,46 @@ def registrar_callbacks_gerais(df_global_original):
     @app.callback(
         Output("download-tabela-geral-excel", "data"),
         Input("btn-exportar-tabela-geral", "n_clicks"),
-        State("tabela-estoque", "data"), # Pega os dados ATUAIS da tabela (já filtrados)
+        State("tabela-estoque", "data"),
         prevent_initial_call=True
     )
     def exportar_tabela_principal_excel(n_clicks, dados_tabela_atual):
         if n_clicks is None or not dados_tabela_atual:
-            return no_update # Ou levante um PreventUpdate
+            return no_update 
 
-        # Os dados_tabela_atual já estão no formato de lista de dicionários
         df_para_exportar = pd.DataFrame(dados_tabela_atual)
         
-        # Selecionar e reordenar colunas para exportação, se necessário
-        # (Opcional, se quiser que o Excel tenha colunas específicas ou ordem diferente)
-        colunas_export = ['Código', 'Produto', 'Un', 'Estoque', 'Categoria', 'Grupo', 'VendaMensal'] # Incluindo VendaMensal se existir
+        colunas_export = ['Código', 'Produto', 'Un', 'Estoque', 'Categoria', 'Grupo', 'VendaMensal'] 
         colunas_presentes_para_export = [col for col in colunas_export if col in df_para_exportar.columns]
         df_para_exportar = df_para_exportar[colunas_presentes_para_export]
 
-        # Usar dcc.send_data_frame para facilitar a criação do arquivo Excel
         return dcc.send_data_frame(df_para_exportar.to_excel, "estoque_filtrado.xlsx", sheet_name="Estoque", index=False)
 
     @app.callback(
         [Output("collapse-painel-esquerdo", "is_open"),
-         Output("coluna-painel-esquerdo", "lg"), # Ajusta a largura da coluna do painel
-         Output("coluna-painel-esquerdo", "className"), # Para esconder completamente se necessário
-         Output("coluna-conteudo-principal", "lg"), # Ajusta a largura da coluna de conteúdo
+         Output("coluna-painel-esquerdo", "lg"), 
+         Output("coluna-painel-esquerdo", "className"),
+         Output("coluna-conteudo-principal", "lg"),
          Output("btn-toggle-painel-esquerdo", "children"),
-         Output("btn-toggle-painel-esquerdo", "title")], # Mudar tooltip do botão
+         Output("btn-toggle-painel-esquerdo", "title")], 
         [Input("btn-toggle-painel-esquerdo", "n_clicks")],
         [State("collapse-painel-esquerdo", "is_open")],
         prevent_initial_call=True
     )
     def toggle_painel_esquerdo(n_clicks, is_open):
-        nova_classe_painel = "p-3 bg-light border-end" # Classe padrão quando visível
+        nova_classe_painel = "p-3 bg-light border-end"
         
         if n_clicks:
-            if is_open: # Se está aberto, vamos fechar
-                novo_lg_painel = 0 # Ocupa 0 colunas no grid grande
-                novo_lg_conteudo = 12 # Conteúdo principal ocupa tudo
+            if is_open: 
+                novo_lg_painel = 0 
+                novo_lg_conteudo = 12
                 novo_children_botao = html.I(className="bi bi-layout-sidebar-inset-reverse")
                 novo_tooltip_botao = "Mostrar Painel de Filtros e KPIs"
-                # Adicionar d-none para realmente esconder em telas menores também se lg=0 não for suficiente
-                # ou se quisermos remover o padding/borda quando escondido.
-                # No entanto, dbc.Collapse já lida com o esconder. Ajustar lg é para redistribuir espaço.
-                # Se usarmos d-none, o Collapse pode não animar corretamente.
-                # Vamos focar em ajustar as larguras 'lg' e deixar o Collapse fazer o resto.
-                # Para realmente esconder e não ocupar espaço no grid, precisamos de `className="d-none"`
-                # e remover o `lg` ou setar para `None`.
-                # Mas dbc.Collapse já faz o display:none. O ajuste de 'lg' é para o grid quando ele está visível
-                # e para quando o outro se expande.
-
-                # Quando escondido pelo Collapse, ele não ocupa espaço no grid.
-                # Então, só precisamos mudar a largura da coluna de conteúdo.
                 return not is_open, 3, nova_classe_painel, 12, novo_children_botao, novo_tooltip_botao
 
-            else: # Se está fechado, vamos abrir
-                novo_lg_painel = 3 # Volta para a largura original
-                novo_lg_conteudo = 9 # Conteúdo principal volta para a largura original
+            else:
+                novo_lg_painel = 3
+                novo_lg_conteudo = 9 
                 novo_children_botao = html.I(className="bi bi-layout-sidebar-inset")
                 novo_tooltip_botao = "Ocultar Painel de Filtros e KPIs"
                 return not is_open, novo_lg_painel, nova_classe_painel, novo_lg_conteudo, novo_children_botao, novo_tooltip_botao
@@ -366,10 +334,10 @@ def registrar_callbacks_gerais(df_global_original):
     @app.callback(
         [Output("modal-grafico-donut-popup", "is_open"),
          Output("grafico-donut-modal", "figure")],
-        [Input("card-clicavel-grafico-donut", "n_clicks"), # <<< Input agora é o card clicável
+        [Input("card-clicavel-grafico-donut", "n_clicks"), 
          Input("btn-fechar-modal-donut", "n_clicks")],
         [State("modal-grafico-donut-popup", "is_open"),
-         State('dropdown-categoria-filtro', 'value'), # Filtros atuais
+         State('dropdown-categoria-filtro', 'value'), 
          State('dropdown-grupo-filtro', 'value'),
          State('input-nome-produto-filtro', 'value')],
         prevent_initial_call=True
@@ -378,14 +346,14 @@ def registrar_callbacks_gerais(df_global_original):
                                                categoria_sel, grupo_sel, nome_prod_sel):
         
         ctx = dash.callback_context
-        triggered_id = ctx.triggered_id if ctx.triggered_id else None # Pode ser None na primeira chamada após prevent_initial_call se não houver n_clicks=0
+        triggered_id = ctx.triggered_id if ctx.triggered_id else None
         
         figura_modal = no_update 
-        abrir_modal_agora = is_open_atual # Mantém o estado se nenhum gatilho relevante
+        abrir_modal_agora = is_open_atual
 
         if triggered_id == "card-clicavel-grafico-donut":
-            abrir_modal_agora = not is_open_atual # Alterna o estado ao clicar no card
-            if abrir_modal_agora: # Se for para abrir o modal
+            abrir_modal_agora = not is_open_atual 
+            if abrir_modal_agora:
                 if df_global_original is not None and not df_global_original.empty:
                     dff = df_global_original.copy()
                     
@@ -403,16 +371,13 @@ def registrar_callbacks_gerais(df_global_original):
                     if nome_prod_sel and nome_prod_sel.strip() != "": 
                         dff = dff[dff['Produto'].str.contains(nome_prod_sel, case=False, na=False)]
                     
-                    # Usar uma altura maior para o gráfico no modal
                     figura_modal = criar_grafico_top_n_produtos_estoque(dff, n=7, height=600) 
                 else:
                     figura_modal = criar_figura_vazia("Top 7 Produtos (Sem dados)")
-                    figura_modal.update_layout(height=600) # Aplicar altura à figura vazia também
-            # Se estiver fechando pelo card (clicando de novo), não precisa atualizar a figura
+                    figura_modal.update_layout(height=600)
             
         elif triggered_id == "btn-fechar-modal-donut":
-            abrir_modal_agora = False # Força o fechamento
-            # Não precisa atualizar a figura ao fechar
+            abrir_modal_agora = False 
         
         return abrir_modal_agora, figura_modal
     
@@ -422,59 +387,170 @@ def registrar_callbacks_gerais(df_global_original):
         [Input("card-clicavel-grafico-niveis", "n_clicks"),
          Input("btn-fechar-modal-niveis", "n_clicks")],
         [State("modal-grafico-niveis-popup", "is_open"),
-         # Pegar os valores dos filtros para gerar o gráfico correto no modal
-         State('dropdown-categoria-filtro', 'value'),
-         State('dropdown-grupo-filtro', 'value'),
-         State('input-nome-produto-filtro', 'value'),
-         # Pegar os limites de estoque atuais das configurações (via spans)
+         State('dropdown-categoria-filtro', 'value'),       
+         State('dropdown-grupo-filtro', 'value'),          
+         State('input-nome-produto-filtro', 'value'),     
          State('span-config-atual-limite-baixo', 'children'),
          State('span-config-atual-limite-medio', 'children')],
         prevent_initial_call=True
     )
     def toggle_e_atualizar_modal_grafico_niveis(
         n_clicks_abrir_card, n_clicks_fechar, is_open_atual,
-        categoria_sel, grupo_sel, nome_prod_sel,
-        limite_baixo_str, limite_medio_str # Recebe dos spans
+        categoria_sel, grupo_sel, nome_prod_sel, 
+        limite_baixo_str, limite_medio_str      
     ):
-        ctx = dash.callback_context # Lembre-se de ter 'import dash'
-        triggered_id = ctx.triggered_id if ctx.triggered_id else None
+        ctx = dash.callback_context
         
+        triggered_component_id = None
+        if ctx.triggered:
+            triggered_prop_id = ctx.triggered[0]['prop_id']
+            triggered_component_id = triggered_prop_id.split('.')[0]
+
         figura_modal = no_update
         abrir_modal_agora = is_open_atual
 
-        if triggered_id == "card-clicavel-grafico-niveis":
+        if triggered_component_id == "card-clicavel-grafico-niveis":
             abrir_modal_agora = not is_open_atual
-            if abrir_modal_agora: # Se for para abrir o modal
+            if abrir_modal_agora: 
                 if df_global_original is not None and not df_global_original.empty:
-                    dff = df_global_original.copy()
-                    
-                    # Aplicar filtros de exclusão globais
+                    dff_modal = df_global_original.copy()
+
                     config_exclusao = carregar_configuracoes_exclusao()
-                    # ... (lógica de aplicar exclusões em dff como no callback principal) ...
-                    grupos_a_excluir = config_exclusao.get("excluir_grupos", []); categorias_a_excluir = config_exclusao.get("excluir_categorias", []); produtos_codigos_a_excluir = [str(p) for p in config_exclusao.get("excluir_produtos_codigos", [])]
-                    if grupos_a_excluir: dff = dff[~dff['Grupo'].isin(grupos_a_excluir)]
-                    if categorias_a_excluir: dff = dff[~dff['Categoria'].isin(categorias_a_excluir)]
-                    if produtos_codigos_a_excluir: dff = dff[~dff['Código'].astype(str).isin(produtos_codigos_a_excluir)]
+                    grupos_a_excluir = config_exclusao.get("excluir_grupos", [])
+                    categorias_a_excluir = config_exclusao.get("excluir_categorias", [])
+                    produtos_codigos_a_excluir = [str(p) for p in config_exclusao.get("excluir_produtos_codigos", [])]
 
-                    # Aplicar filtros interativos da aba principal
-                    if categoria_sel: dff = dff[dff['Categoria'] == categoria_sel]
-                    if grupo_sel: dff = dff[dff['Grupo'] == grupo_sel]
-                    if nome_prod_sel and nome_prod_sel.strip() != "": 
-                        dff = dff[dff['Produto'].str.contains(nome_prod_sel, case=False, na=False)]
+                    if grupos_a_excluir:
+                        dff_modal = dff_modal[~dff_modal['Grupo'].isin(grupos_a_excluir)]
+                    if categorias_a_excluir:
+                        dff_modal = dff_modal[~dff_modal['Categoria'].isin(categorias_a_excluir)]
+                    if produtos_codigos_a_excluir:
+                        dff_modal = dff_modal[~dff_modal['Código'].astype(str).isin(produtos_codigos_a_excluir)]
+
+                    if categoria_sel:
+                        dff_modal = dff_modal[dff_modal['Categoria'] == categoria_sel]
+                    if grupo_sel:
+                        dff_modal = dff_modal[dff_modal['Grupo'] == grupo_sel]
+                    if nome_prod_sel and nome_prod_sel.strip() != "":
+                        dff_modal = dff_modal[dff_modal['Produto'].str.contains(nome_prod_sel, case=False, na=False)]
                     
-                    # Carregar os limites de estoque atuais (já estão como string dos spans)
-                    # Ou, melhor, carregar diretamente do config_manager para garantir os valores corretos
                     config_niveis_atuais = carregar_definicoes_niveis_estoque()
-                    limite_baixo = config_niveis_atuais.get("limite_estoque_baixo", 10)
-                    limite_medio = config_niveis_atuais.get("limite_estoque_medio", 100)
+                    limite_baixo_config = config_niveis_atuais.get("limite_estoque_baixo", 10)
+                    limite_medio_config = config_niveis_atuais.get("limite_estoque_medio", 100)
 
-                    # Gerar o gráfico de Níveis com uma altura maior para o modal
-                    figura_modal = criar_grafico_niveis_estoque(dff, limite_baixo, limite_medio, height=550) 
+                    try:
+                        limite_baixo = float(limite_baixo_str) if limite_baixo_str and limite_baixo_str != "N/A" else limite_baixo_config
+                    except (ValueError, TypeError):
+                        limite_baixo = limite_baixo_config
+                    
+                    try:
+                        limite_medio = float(limite_medio_str) if limite_medio_str and limite_medio_str != "N/A" else limite_medio_config
+                    except (ValueError, TypeError):
+                        limite_medio = limite_medio_config
+                        
+                    if not dff_modal.empty:
+                        figura_modal = criar_grafico_niveis_estoque(dff_modal, limite_baixo, limite_medio, height=500)
+                    else:
+                        figura_modal = criar_figura_vazia("Produtos por Nível de Estoque (Sem dados com filtros atuais)", height=500)
                 else:
-                    figura_modal = criar_figura_vazia("Produtos por Nível de Estoque (Sem dados)")
-                    figura_modal.update_layout(height=550)
-            
-        elif triggered_id == "btn-fechar-modal-niveis":
+                    figura_modal = criar_figura_vazia("Produtos por Nível de Estoque (Dados não carregados)", height=500)
+
+        elif triggered_component_id == "btn-fechar-modal-niveis":
             abrir_modal_agora = False
         
         return abrir_modal_agora, figura_modal
+    
+    @app.callback(
+        Output('tabela-detalhes-nivel-estoque-modal-container', 'children'),
+        [Input('grafico-niveis-modal', 'clickData')],
+        [State("modal-grafico-niveis-popup", "is_open"),
+         State('dropdown-categoria-filtro', 'value'),
+         State('dropdown-grupo-filtro', 'value'),
+         State('input-nome-produto-filtro', 'value'),
+         State('span-config-atual-limite-baixo', 'children'), 
+         State('span-config-atual-limite-medio', 'children')]
+    )
+    def atualizar_tabela_detalhes_nivel_estoque(click_data, modal_is_open,
+                                                categoria_sel, grupo_sel, nome_prod_sel,
+                                                limite_baixo_str, limite_medio_str):
+        '''
+        Atualiza a tabela de detalhes no modal de níveis de estoque.
+        A tabela mostra os produtos correspondentes ao nível de estoque (barra) clicado no gráfico,
+        baseando-se na primeira palavra da label da barra e considerando os filtros globais.
+        '''
+        if not modal_is_open or not click_data or not click_data['points']:
+            return dbc.Alert("Clique em uma barra do gráfico acima para ver os produtos detalhados.", 
+                             color="info", className="text-center text-muted mt-3")
+
+        config_niveis_atuais = carregar_definicoes_niveis_estoque()
+        limite_baixo_default = config_niveis_atuais.get("limite_estoque_baixo", 10)
+        limite_medio_default = config_niveis_atuais.get("limite_estoque_medio", 100)
+
+        try:
+            limite_baixo = float(limite_baixo_str) if limite_baixo_str and limite_baixo_str != "N/A" else limite_baixo_default
+        except (ValueError, TypeError):
+            limite_baixo = limite_baixo_default
+        
+        try:
+            limite_medio = float(limite_medio_str) if limite_medio_str and limite_medio_str != "N/A" else limite_medio_default
+        except (ValueError, TypeError):
+            limite_medio = limite_medio_default
+
+        if df_global_original is None or df_global_original.empty:
+            return dbc.Alert("Os dados de estoque não estão disponíveis para gerar a tabela.", color="warning", className="mt-3")
+
+        try:
+            nivel_clicado_label_completa = click_data['points'][0]['x'] 
+            primeira_palavra_label = nivel_clicado_label_completa.split()[0].lower()
+        except (KeyError, IndexError, AttributeError):
+            return dbc.Alert("Não foi possível identificar o nível de estoque clicado. Tente novamente.", color="danger", className="mt-3")
+
+        dff = df_global_original.copy()
+
+        config_exclusao = carregar_configuracoes_exclusao()
+        grupos_a_excluir = config_exclusao.get("excluir_grupos", [])
+        categorias_a_excluir = config_exclusao.get("excluir_categorias", [])
+        produtos_codigos_a_excluir = [str(p) for p in config_exclusao.get("excluir_produtos_codigos", [])]
+
+        if grupos_a_excluir: dff = dff[~dff['Grupo'].isin(grupos_a_excluir)]
+        if categorias_a_excluir: dff = dff[~dff['Categoria'].isin(categorias_a_excluir)]
+        if produtos_codigos_a_excluir: dff = dff[~dff['Código'].astype(str).isin(produtos_codigos_a_excluir)]
+
+        if categoria_sel: dff = dff[dff['Categoria'] == categoria_sel]
+        if grupo_sel: dff = dff[dff['Grupo'] == grupo_sel]
+        if nome_prod_sel and nome_prod_sel.strip() != "":
+            dff = dff[dff['Produto'].str.contains(nome_prod_sel, case=False, na=False)]
+        
+        dff['Estoque'] = pd.to_numeric(dff['Estoque'], errors='coerce')
+        dff.dropna(subset=['Estoque'], inplace=True)
+
+        df_nivel_selecionado = pd.DataFrame()
+        titulo_tabela = "Produtos no Nível Selecionado"
+        if primeira_palavra_label == "baixo":
+            df_nivel_selecionado = dff[dff['Estoque'] <= limite_baixo]
+            titulo_tabela = f"Produtos com Estoque Baixo (Estoque ≤ {limite_baixo:g})"
+        elif primeira_palavra_label == "médio" or primeira_palavra_label == "medio": # Mantendo a variação para "medio" por segurança
+            df_nivel_selecionado = dff[(dff['Estoque'] > limite_baixo) & (dff['Estoque'] <= limite_medio)]
+            titulo_tabela = f"Produtos com Estoque Médio (Estoque > {limite_baixo:g} e ≤ {limite_medio:g})"
+        elif primeira_palavra_label == "alto":
+            df_nivel_selecionado = dff[dff['Estoque'] > limite_medio]
+            titulo_tabela = f"Produtos com Estoque Alto (Estoque > {limite_medio:g})"
+        else:
+            return dbc.Alert(f"Nível de estoque com primeira palavra '{primeira_palavra_label}' (derivado de '{nivel_clicado_label_completa}') não reconhecido.", color="warning", className="mt-3")
+
+        if df_nivel_selecionado.empty:
+            nome_nivel_display = nivel_clicado_label_completa.split('(')[0].strip() if '(' in nivel_clicado_label_completa else primeira_palavra_label.capitalize()
+            return dbc.Alert(f"Nenhum produto encontrado para o nível '{nome_nivel_display}' com os filtros atuais.", color="info", className="mt-3")
+
+        tabela_componente = criar_tabela_estoque(
+            df_nivel_selecionado, 
+            id_tabela='tabela-produtos-detalhe-nivel-modal',
+            page_size=7
+        )
+        
+        return html.Div([
+            html.H6(titulo_tabela, className="mb-2 text-center fw-bold"),
+            tabela_componente
+        ])
+
+

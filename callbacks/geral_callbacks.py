@@ -192,7 +192,6 @@ def registrar_callbacks_gerais(df_global_original):
         val_medio_recarregado = config_recarregada.get("limite_estoque_medio")
         return status_mensagem_componente, str(val_baixo_recarregado), str(val_medio_recarregado), val_baixo_recarregado, val_medio_recarregado
 
-
     @app.callback(
         [Output('div-status-salvar-exclusoes', 'children'),
          Output('span-excluidos-grupos', 'children'),
@@ -230,7 +229,6 @@ def registrar_callbacks_gerais(df_global_original):
             cat_exc_atuais,   
             prod_cod_exc_atuais
         )
-
 
     @app.callback(
         Output('conteudo-dinamico-aba-estoque-baixo', 'children'),
@@ -301,36 +299,6 @@ def registrar_callbacks_gerais(df_global_original):
 
         return dcc.send_data_frame(df_para_exportar.to_excel, "estoque_filtrado.xlsx", sheet_name="Estoque", index=False)
 
-    @app.callback(
-        [Output("collapse-painel-esquerdo", "is_open"),
-         Output("coluna-painel-esquerdo", "lg"), 
-         Output("coluna-painel-esquerdo", "className"),
-         Output("coluna-conteudo-principal", "lg"),
-         Output("btn-toggle-painel-esquerdo", "children"),
-         Output("btn-toggle-painel-esquerdo", "title")], 
-        [Input("btn-toggle-painel-esquerdo", "n_clicks")],
-        [State("collapse-painel-esquerdo", "is_open")],
-        prevent_initial_call=True
-    )
-    def toggle_painel_esquerdo(n_clicks, is_open):
-        nova_classe_painel = "p-3 bg-light border-end"
-        
-        if n_clicks:
-            if is_open: 
-                novo_lg_painel = 0 
-                novo_lg_conteudo = 12
-                novo_children_botao = html.I(className="bi bi-layout-sidebar-inset-reverse")
-                novo_tooltip_botao = "Mostrar Painel de Filtros e KPIs"
-                return not is_open, 3, nova_classe_painel, 12, novo_children_botao, novo_tooltip_botao
-
-            else:
-                novo_lg_painel = 3
-                novo_lg_conteudo = 9 
-                novo_children_botao = html.I(className="bi bi-layout-sidebar-inset")
-                novo_tooltip_botao = "Ocultar Painel de Filtros e KPIs"
-                return not is_open, novo_lg_painel, nova_classe_painel, novo_lg_conteudo, novo_children_botao, novo_tooltip_botao
-        return no_update, no_update, no_update, no_update, no_update, no_update
-    
     @app.callback(
         [Output("modal-grafico-donut-popup", "is_open"),
          Output("grafico-donut-modal", "figure")],
@@ -552,5 +520,20 @@ def registrar_callbacks_gerais(df_global_original):
             html.H6(titulo_tabela, className="mb-2 text-center fw-bold"),
             tabela_componente
         ])
+    
+    @app.callback(
+        Output("offcanvas-filtros-estoque-geral", "is_open"),
+        Input("btn-toggle-painel-esquerdo", "n_clicks"), # Usando o ID do botão definido no layout
+        State("offcanvas-filtros-estoque-geral", "is_open"),
+        prevent_initial_call=True
+    )
+    def toggle_filtros_offcanvas(n_clicks_toggle, is_open_offcanvas):
+        '''
+        Abre ou fecha o Offcanvas de filtros na aba de Estoque Geral.
+        '''
+        if n_clicks_toggle:
+            return not is_open_offcanvas
+        return is_open_offcanvas # ou no_update
+    
 
 

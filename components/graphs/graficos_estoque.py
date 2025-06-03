@@ -288,11 +288,12 @@ def criar_grafico_categorias_com_estoque_baixo(df_estoque_baixo, top_n=10):
     return fig
 
 def criar_grafico_estoque_produtos_populares(df, n=7):
-    """
+    '''
     Cria um gráfico de barras agrupadas comparando Estoque Atual vs. Venda Mensal
     para os N produtos mais vendidos. O eixo X não mostra nomes de produtos.
     A legenda identifica "Vendas no Mês" (verde) e os produtos para suas barras de "Estoque Atual".
-    """
+    O gráfico inclui linhas de grade horizontais.
+    '''
     if df is None or df.empty or 'Produto' not in df.columns or \
        'VendaMensal' not in df.columns or 'Estoque' not in df.columns:
         return criar_figura_vazia(f"Venda vs. Estoque dos Top {n} Produtos (Sem Dados)")
@@ -306,59 +307,55 @@ def criar_grafico_estoque_produtos_populares(df, n=7):
     if produtos_populares_df.empty:
         return criar_figura_vazia(f"Venda vs. Estoque dos Top {n} Produtos (Sem produtos com vendas)")
 
-    # Ordenar produtos pela venda para consistência no eixo X (mesmo que os labels não apareçam)
-    # Isso também define a ordem na legenda para os estoques.
     produtos_populares_df = produtos_populares_df.sort_values(by='VendaMensalNum', ascending=False)
     
     fig = go.Figure()
     
-    # Usar uma paleta de cores para as barras de estoque dos produtos
     cores_estoque_palette = px.colors.qualitative.Plotly 
 
-    # Adicionar um traço de barra para o Estoque de cada produto popular
     for i, (idx, row) in enumerate(produtos_populares_df.iterrows()):
         fig.add_trace(go.Bar(
-            name=str(row['Produto']), # Nome do produto para a legenda (associado à cor do estoque)
-            x=[str(row['Produto'])],  # Categoria no eixo X (será o mesmo para as duas barras do produto)
+            name=str(row['Produto']),
+            x=[str(row['Produto'])],
             y=[row['EstoqueNum']],
             text=[f"{row['EstoqueNum']:.0f}"],
             textposition='outside',
             marker_color=cores_estoque_palette[i % len(cores_estoque_palette)],
-            offsetgroup=0 # Coloca todas as barras de estoque no primeiro grupo de offset
+            offsetgroup=0
         ))
 
-    # Adicionar um único traço de barra para as Vendas no Mês
     fig.add_trace(go.Bar(
         name='Vendas no Mês',
-        x=produtos_populares_df['Produto'].tolist(), # Categorias no eixo X
+        x=produtos_populares_df['Produto'].tolist(),
         y=produtos_populares_df['VendaMensalNum'].tolist(),
         text=[f"{v:.0f}" for v in produtos_populares_df['VendaMensalNum']],
         textposition='outside',
-        marker_color='rgba(40, 167, 69, 0.9)', # Verde para vendas
-        offsetgroup=1 # Coloca todas as barras de vendas no segundo grupo de offset
+        marker_color='rgba(40, 167, 69, 0.9)',
+        offsetgroup=1
     ))
 
     fig.update_layout(
-        barmode='group', # Essencial para agrupar as barras com diferentes offsetgroups
+        barmode='group',
         title_text=f'Estoque vs. Venda Mensal (Top {n} Produtos Populares)',
         title_x=0.5,
-        xaxis_title=None, # Sem título no eixo X
-        xaxis_showticklabels=False, # Esconder os nomes dos produtos do eixo X
+        xaxis_title=None,
+        xaxis_showticklabels=False,
         yaxis_title="Quantidade",
+        yaxis_showgrid=True,  # Adiciona linhas de grade horizontais
+        yaxis_gridcolor='lightgray',  # Define a cor das linhas de grade
         paper_bgcolor='white',
         plot_bgcolor='white',
         legend_title_text='Legenda:',
         legend=dict(
-            orientation="v",    # Legenda vertical
-            yanchor="top",      # Ancorar no topo da legenda
-            y=1,                # Posicionar no topo da área de plotagem
-            xanchor="left",     # Ancorar à esquerda da legenda
-            x=1.02,             # Posicionar um pouco à direita da área de plotagem
-            bgcolor="rgba(255,255,255,0.7)", # Fundo levemente transparente
+            orientation="v",
+            yanchor="top",
+            y=1,
+            xanchor="left",
+            x=1.02,
+            bgcolor="rgba(255,255,255,0.7)",
             bordercolor="rgba(0,0,0,0.1)",
             borderwidth=1
         ),
-        margin=dict(l=50, r=200, t=80, b=30) # Margem direita aumentada para a legenda
-                                            # Ajuste 'r' conforme necessário
+        margin=dict(l=50, r=200, t=80, b=30)
     )
     return fig

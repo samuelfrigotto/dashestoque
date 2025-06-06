@@ -1,0 +1,19 @@
+/* assets/custom_styles.css */
+
+.custom-offcanvas-filtros.offcanvas-start {
+    height: 50vh !important; /* Define a altura para 50% da altura da viewport (tela) */
+    /* Você pode usar um valor fixo também, ex: height: 400px !important; */
+
+    top: 25vh !important; /* Posiciona o topo do Offcanvas a 25% da altura da tela, fazendo com que ele ocupe a faixa central */
+                          /* Se height é 50vh e top é 25vh, ele irá de 25% a 75% da altura da tela */
+
+    bottom: auto !important; /* Importante para sobrescrever o 'bottom: 0' padrão */
+
+    /* Opcional: para cantos arredondados, dando um visual mais suave */
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+
+    /* Garante que a animação de slide continue funcionando bem */
+    /* O Bootstrap já lida com o translateX para a animação de entrada/saída. */
+    /* Essas configurações de altura e topo não devem interferir na animação de slide padrão. */
+}

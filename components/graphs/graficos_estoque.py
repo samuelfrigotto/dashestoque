@@ -359,3 +359,66 @@ def criar_grafico_estoque_produtos_populares(df, n=7):
         margin=dict(l=50, r=200, t=80, b=30)
     )
     return fig
+
+def criar_grafico_colunas_estoque_por_grupo(df_filtrado):
+    '''
+    Cria um gráfico de TREEMAP mostrando o estoque total por grupo.
+    Entrada: DataFrame filtrado com as colunas 'Grupo' e 'Estoque'.
+    Saída: Figura do Plotly (Treemap).
+    '''
+    titulo_grafico = "Estoque por Grupo (Treemap)"
+    nova_altura_grafico = 450 # Altura que definimos anteriormente
+
+    if df_filtrado.empty or 'Grupo' not in df_filtrado.columns or 'Estoque' not in df_filtrado.columns:
+        fig = px.treemap(title=f"{titulo_grafico} - Sem dados")
+        fig.update_layout(
+            height=nova_altura_grafico,
+            margin=dict(t=50, b=5, l=5, r=5),
+            paper_bgcolor='rgba(0,0,0,0)',
+            font_color="black"
+        )
+        return fig
+
+    df_filtrado['Estoque'] = pd.to_numeric(df_filtrado['Estoque'], errors='coerce').fillna(0)
+    df_para_treemap = df_filtrado[df_filtrado['Estoque'] > 0]
+
+    if df_para_treemap.empty:
+        fig = px.treemap(title=f"{titulo_grafico} - Sem dados positivos")
+        fig.update_layout(
+            height=nova_altura_grafico,
+            margin=dict(t=50, b=5, l=5, r=5),
+            paper_bgcolor='rgba(0,0,0,0)',
+            font_color="black"
+        )
+        return fig
+
+    fig = px.treemap(
+        df_para_treemap,
+        path=[px.Constant("Todos os Grupos"), 'Grupo'],
+        values='Estoque',
+        title=titulo_grafico,
+        color='Estoque',
+        color_continuous_scale=px.colors.sequential.YlGn, # <--- ALTERAÇÃO AQUI
+        custom_data=['Grupo', 'Estoque']
+    )
+    fig.update_traces(
+        textinfo='label+value+percent root',
+        hovertemplate='<b>%{customdata[0]}</b><br>Estoque: %{customdata[1]:,.0f}<extra></extra>',
+        textposition='middle center',
+        textfont=dict(
+            family="Arial Black, sans-serif",
+            size=11,
+            color="black" # Mantido como preto, mas observe o contraste com a nova escala
+        ),
+        marker_line_width=1,
+        marker_line_color='rgba(255,255,255,0.5)'
+    )
+    fig.update_layout(
+        height=nova_altura_grafico,
+        margin=dict(t=50, b=15, l=15, r=15),
+        paper_bgcolor='rgba(0,0,0,0)',
+        font_color="black",
+        title_font_size=18,
+        title_x=0.5
+    )
+    return fig

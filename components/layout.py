@@ -4,6 +4,7 @@ from .tabs.tab_estoque_geral import criar_conteudo_aba_estoque_geral
 from .tabs.tab_configuracoes import criar_conteudo_aba_configuracoes
 from .tabs.tab_estoque_baixo import criar_conteudo_aba_estoque_baixo
 from .tabs.tab_produtos_em_falta import criar_conteudo_aba_produtos_em_falta
+from components.header import criar_cabecalho
 
 def criar_layout_principal(df_completo, nome_arquivo, page_size_tabela=20):
     """
@@ -52,8 +53,8 @@ def criar_layout_principal(df_completo, nome_arquivo, page_size_tabela=20):
 
 
     layout = dbc.Container([
-        titulo_app,
+        criar_cabecalho(df_completo),
         abas_componente 
-    ], fluid=True, style={'paddingTop': '20px', 'paddingBottom': '50px'})
+    ], fluid=True, className="p-0")
     
     return layout
